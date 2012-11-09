@@ -1,5 +1,6 @@
 #include "OOOUnitTestDefines.h"
 #include "OOOInMemoryRepository.h"
+#include "OOOTestCache.h"
 
 static char * szApple = "Apple";
 static char * szBanana = "Banana";
@@ -17,6 +18,7 @@ OOODeclare()
 OOODeclareEnd
 
 OOOPrivateData
+	OOOTestCache * pCache;
 	OOOInMemoryRepository * pRepository;
 	char * szName;
 	bool bApple;
@@ -27,6 +29,7 @@ OOOPrivateDataEnd
 OOODestructor
 {
 	OOODestroy(OOOF(pRepository));
+	OOODestroy(OOOF(pCache));
 }
 OOODestructorEnd
 
@@ -45,6 +48,9 @@ OOOMethodEnd
 
 OOOMethod(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
 {
+	unsigned char * pCachedData;
+	size_t uCachedSize;
+
 	if (O_strcmp(OOOF(szName), "APPLE") == 0 && !OOOF(bApple))
 	{
 		OOOCheck(O_strcmp(OOOICall(iError, toString), "UNKNOWN MODULE") == 0);
@@ -68,6 +74,12 @@ OOOMethod(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
 		OOOCheck(iError == NULL);
 		OOOCheck(O_strcmp((char *) pData, szApple) == 0);
 		OOOCheck(O_strlen(szApple) + 1 == uSize);
+
+		/* cache should contain APPLE which should reference the original pointer */
+		OOOCall(OOOF(pCache), get, "APPLE", &pCachedData, &uCachedSize);
+		OOOCheck(pCachedData == (unsigned char *) szApple);
+		OOOCheck(uCachedSize == O_strlen(szApple) + 1);
+
 		OOOF(szName) = "PEAR";
 		OOOICall(OOOCast(OOOIRepository, OOOF(pRepository)), get, OOOCast(OOOIRepositoryData, OOOThis));
 	}
@@ -86,6 +98,12 @@ OOOMethod(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
 		OOOCheck(iError == NULL);
 		OOOCheck(O_strcmp((char *) pData, szBanana) == 0);
 		OOOCheck(O_strlen(szBanana) + 1 == uSize);
+
+		/* cache should contain BANANA which should reference the original pointer */
+		OOOCall(OOOF(pCache), get, "BANANA", &pCachedData, &uCachedSize);
+		OOOCheck(pCachedData == (unsigned char *) szBanana);
+		OOOCheck(uCachedSize == O_strlen(szBanana) + 1);
+
 		OOOF(szName) = "PEAR";
 		OOOCall(OOOF(pRepository), add, "PEAR", (unsigned char *) szPear, O_strlen(szPear) + 1);
 		OOOF(bPear) = TRUE;
@@ -97,6 +115,11 @@ OOOMethod(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
 		OOOCheck(iError == NULL);
 		OOOCheck(O_strcmp((char *) pData, szPear) == 0);
 		OOOCheck(O_strlen(szPear) + 1 == uSize);
+
+		/* cache should contain PEAR which should reference the original pointer */
+		OOOCall(OOOF(pCache), get, "PEAR", &pCachedData, &uCachedSize);
+		OOOCheck(pCachedData == (unsigned char *) szPear);
+		OOOCheck(uCachedSize == O_strlen(szPear) + 1);
 	}
 	else
 	{
@@ -118,7 +141,8 @@ OOOConstructor()
 		OOOMapMethod(start)
 	OOOMapMethodsEnd
 
-	OOOF(pRepository) = OOOConstruct(OOOInMemoryRepository);
+	OOOF(pCache) = OOOConstruct(OOOTestCache);
+	OOOF(pRepository) = OOOConstruct(OOOInMemoryRepository, OOOCast(OOOICache, OOOF(pCache)));
 }
 OOOConstructorEnd
 #undef OOOClass

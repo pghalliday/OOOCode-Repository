@@ -10,3 +10,6 @@
 [submodule "Repository/submodules/OOOCode"]
 	path = Repository/submodules/OOOCode
 	url = https://github.com/pghalliday/OOOCode.git
+[submodule "Repository/submodules/Cache"]
+	path = Repository/submodules/Cache
+	url = https://github.com/pghalliday/OOOCode-Cache.git

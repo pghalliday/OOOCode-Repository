@@ -13,6 +13,7 @@ struct _Entry
 };
 
 OOOPrivateData
+	OOOICache * iCache;
 	Entry * pEntries;
 OOOPrivateDataEnd
 
@@ -25,7 +26,6 @@ OOODestructor
 		pLast = pEntry;
 		pEntry = pEntry->pNext;
 		O_free(pLast->szName);
-		O_free(pLast->pData);
 		O_free(pLast);
 	}
 }
@@ -39,11 +39,8 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 	{
 		if (O_strcmp(pEntry->szName, szName) == 0)
 		{
-			size_t uSize = pEntry->uSize;
-			unsigned char * pData = O_calloc(uSize, sizeof(unsigned char));
-			O_memcpy(pData, pEntry->pData, uSize);
-			OOOICall(iRepositoryData, load, NULL, pData, uSize);
-			O_free(pData);
+			OOOICall(OOOF(iCache), set, szName, pEntry->pData, pEntry->uSize);
+			OOOICall(iRepositoryData, load, NULL, pEntry->pData, pEntry->uSize);
 			break;
 		}
 		pEntry = pEntry->pNext;
@@ -63,14 +60,13 @@ OOOMethod(void, add, char * szName, unsigned char * pData, size_t uSize)
 	Entry * pEntry = O_malloc(sizeof(Entry));
 	pEntry->pNext = OOOF(pEntries);
 	OOOF(pEntries) = pEntry;
-	pEntry->pData = O_calloc(uSize, sizeof(unsigned char));
-	O_memcpy(pEntry->pData, pData, uSize);
+	pEntry->pData = pData;
 	pEntry->uSize = uSize;
 	pEntry->szName = O_strdup(szName);
 }
 OOOMethodEnd
 
-OOOConstructor()
+OOOConstructor(OOOICache * iCache)
 {
 	#define OOOInterface OOOIRepository
 	OOOMapVirtuals
@@ -81,6 +77,8 @@ OOOConstructor()
 	OOOMapMethods
 		OOOMapMethod(add)
 	OOOMapMethodsEnd
+
+	OOOF(iCache) = iCache;
 }
 OOOConstructorEnd
 

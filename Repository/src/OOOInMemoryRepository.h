@@ -3,9 +3,10 @@
 
 #include "OOOCode.h"
 #include "OOOIRepository.h"
+#include "OOOICache.h"
 
 #define OOOClass OOOInMemoryRepository
-OOODeclare()
+OOODeclare(OOOICache * iCache)
 	OOOImplements
 		OOOImplement(OOOIRepository)
 	OOOImplementsEnd

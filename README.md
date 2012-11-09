@@ -7,6 +7,7 @@ OOOCode Repository interface for named lumps of data.
 
 - Should expose a repository interface supporting asynchronous implementations
 - Should implement an in memory repository
+- OOOInMemoryRepository should add modules to a cache
 
 ## API
 
@@ -20,7 +21,10 @@ unsigned char aMyData[] =
   ...
 };
 size_t uMyDataSize = sizeof(aMyData)
-OOOInMemoryRepository * pRepository = OOOConstruct(OOOInMemoryRepository);
+
+/* Cache should implement the OOOICache interface */
+Cache * pCache = OOOConstruct(Cache);
+OOOInMemoryRepository * pRepository = OOOConstruct(OOOInMemoryRepository, OOOCast(OOOICache, pCache));
 OOOCall(pRepository, add, "MYDATA", aMyData, uMyDataSize);
 
 
