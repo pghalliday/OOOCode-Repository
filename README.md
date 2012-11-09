@@ -39,6 +39,7 @@ OOOICall(OOOCast(OOOIRepository, pRepository), get, OOOCast(OOOIRepositoryData, 
 
 ## Roadmap
 
+* Should implement a cache repository to cache data loaded from other repositories
 - Should implement an in band repository to load data from broadcast
 - Should implement a remote repository to load data from the network
 
