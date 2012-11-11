@@ -30,14 +30,28 @@ OOODestructor
 }
 OOODestructorEnd
 
-OOOMethod(void, set, char * szName, unsigned char * pData, size_t uSize)
+OOOMethod(void, set, OOOICacheData * iCacheData)
 {
-	Entry * pEntry = O_malloc(sizeof(Entry));
-	pEntry->szName = O_strdup(szName);
-	pEntry->pData = pData;
-	pEntry->uSize = uSize;
-	pEntry->pNext = OOOF(pEntries);
-	OOOF(pEntries) = pEntry;
+	char * szName = OOOICall(iCacheData, getName);
+	unsigned char * pData = OOOICall(iCacheData, getData);
+	size_t uSize = OOOICall(iCacheData, getSize);
+
+	if (szName)
+	{
+		Entry * pEntry = O_malloc(sizeof(Entry));
+		pEntry->szName = O_strdup(szName);
+		pEntry->pData = pData;
+		pEntry->uSize = uSize;
+		pEntry->pNext = OOOF(pEntries);
+		OOOF(pEntries) = pEntry;
+		OOOICall(iCacheData, cached, NULL);
+	}
+	else
+	{
+		OOOError * pError = OOOConstruct(OOOError, "INVALID NAME");
+		OOOICall(iCacheData, cached, OOOCast(OOOIError, pError));
+		OOODestroy(pError);
+	}
 }
 OOOMethodEnd
 

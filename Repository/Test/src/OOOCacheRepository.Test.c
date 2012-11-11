@@ -1,16 +1,95 @@
 #include "OOOUnitTestDefines.h"
 #include "OOOCacheRepository.h"
 
-static char * szMyData = "This is a test";
-static char * szYourData = "This is also a test";
+#define MY_DATA_NAME		"MyData"
+#define MY_DATA				"This is a test"
+#define YOUR_DATA_NAME		"YourData"
+#define YOUR_DATA			"This is also a test"
+#define UNKNOWN_DATA_NAME	"UnknownData"
+#define TEMP_DATA_NAME		"TempData"
 
-#define OOOClass Data
+#define CACHE_DIRECTORY		"/cache"
+
+#define OOOClass TestCacheData
+OOODeclare(char * szName, char * szError, unsigned char * pData, size_t uSize)
+	OOOImplements
+		OOOImplement(OOOICacheData)
+	OOOImplementsEnd
+	OOOExports
+		OOOExport(bool, wasChecked)
+	OOOExportsEnd
+OOODeclareEnd
+
+OOOPrivateData
+	char * szName;
+	char * szError;
+	unsigned char * pData;
+	size_t uSize;
+	bool bChecked;
+OOOPrivateDataEnd
+
+OOODestructor
+OOODestructorEnd
+
+OOOMethod(char *, getName)
+	return OOOF(szName);
+OOOMethodEnd
+
+OOOMethod(unsigned char *, getData)
+	return OOOF(pData);
+OOOMethodEnd
+
+OOOMethod(size_t, getSize)
+	return OOOF(uSize);
+OOOMethodEnd
+
+OOOMethod(void, cached, OOOIError * iError)
+	if (OOOF(szError))
+	{
+		if (OOOCheck(iError != NULL))
+		{
+			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
+		}
+	}
+	else
+	{
+		OOOCheck(iError == NULL);
+	}
+	OOOF(bChecked) = TRUE;
+OOOMethodEnd
+
+OOOMethod(bool, wasChecked)
+	return OOOF(bChecked);
+OOOMethodEnd
+
+OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSize)
+#define OOOInterface OOOICacheData
+	OOOMapVirtuals
+		OOOMapVirtual(getName)
+		OOOMapVirtual(getData)
+		OOOMapVirtual(getSize)
+		OOOMapVirtual(cached)
+	OOOMapVirtualsEnd
+#undef OOOInterface
+
+	OOOMapMethods
+		OOOMapMethod(wasChecked)
+	OOOMapMethodsEnd
+
+	OOOF(szName) = szName;
+	OOOF(szError) = szError;
+	OOOF(pData) = pData;
+	OOOF(uSize) = uSize;
+OOOConstructorEnd
+#undef OOOClass
+
+#define OOOClass TestRepositoryData
 OOODeclare(char * szName, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOIRepositoryData)
 	OOOImplementsEnd
 	OOOExports
-		OOOExport(bool, checked)
+		OOOExport(bool, wasChecked)
 	OOOExportsEnd
 OOODeclareEnd
 
@@ -46,7 +125,7 @@ OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
 	OOOF(bChecked) = TRUE;
 OOOMethodEnd
 
-OOOMethod(bool, checked)
+OOOMethod(bool, wasChecked)
 	return OOOF(bChecked);
 OOOMethodEnd
 
@@ -59,7 +138,7 @@ OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSiz
 #undef OOOInterface
 
 	OOOMapMethods
-		OOOMapMethod(checked)
+		OOOMapMethod(wasChecked)
 	OOOMapMethodsEnd
 
 	OOOF(szName) = szName;
@@ -69,11 +148,26 @@ OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSiz
 OOOConstructorEnd
 #undef OOOClass
 
+static void set(OOOICache * iCache, char * szName, char * szError, unsigned char * pData, size_t uSize)
+{
+	TestCacheData * pTestCacheData = OOOConstruct(TestCacheData, szName, szError, pData, uSize);
+	OOOICall(iCache, set, OOOCast(OOOICacheData, pTestCacheData));
+	OOOCheck(OOOCall(pTestCacheData, wasChecked));
+	OOODestroy(pTestCacheData);
+}
+
+static void get(OOOIRepository * iRepository, char * szName, char * szError, unsigned char * pData, size_t uSize)
+{
+	TestRepositoryData * pTestRepositoryData = OOOConstruct(TestRepositoryData, szName, szError, pData, uSize);
+	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pTestRepositoryData));
+	OOOCheck(OOOCall(pTestRepositoryData, wasChecked));
+	OOODestroy(pTestRepositoryData);
+}
+
 OOOTest(OOOCacheRepository)
 {
 	OOOIRepository * iRepository;
 	OOOICache * iCache;
-	Data * pData;
 	char * szName;
 
 	/* Should construct */
@@ -89,43 +183,29 @@ OOOTest(OOOCacheRepository)
 	OOOCheck(iCache != NULL);
 
 	/* Should error when trying to get data that has not been added to the cache */
-	pData = OOOConstruct(Data, "MyData", "UNKNOWN MODULE", NULL, 0);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
+	get(iRepository, MY_DATA_NAME, "UNKNOWN MODULE", NULL, 0);
 
 	/* Should return the same pointer for data that has been added to the cache */
-	pData = OOOConstruct(Data, "MyData", NULL, (unsigned char *) szMyData, O_strlen(szMyData) + 1);
-	OOOICall(iCache, set, "MyData", (unsigned char *) szMyData, O_strlen(szMyData) + 1);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
+	set(iCache, MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	get(iRepository, MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
 	/* Should be able to add multiple modules to the cache */
-	OOOICall(iCache, set, "YourData", (unsigned char *) szYourData, O_strlen(szYourData) + 1);
-	pData = OOOConstruct(Data, "MyData", NULL, (unsigned char *) szMyData, O_strlen(szMyData) + 1);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
-	pData = OOOConstruct(Data, "YourData", NULL, (unsigned char *) szYourData, O_strlen(szYourData) + 1);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
-	pData = OOOConstruct(Data, "UnknownData", "UNKNOWN MODULE", NULL, 0);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
+	set(iCache, YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	get(iRepository, MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	get(iRepository, YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	get(iRepository, UNKNOWN_DATA_NAME, "UNKNOWN MODULE", NULL, 0);
 
 	/* Should not keep a pointer to the original module name string */
-	szName = O_strdup("Test");
-	pData = OOOConstruct(Data, "Test", NULL, (unsigned char *) szMyData, O_strlen(szMyData) + 1);
-	OOOICall(iCache, set, szName, (unsigned char *) szMyData, O_strlen(szMyData) + 1);
+	szName = O_strdup(TEMP_DATA_NAME);
+	set(iCache, szName, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 	/* ensure the memory is changed before freeing it */
 	szName[0] = '\0';
 	O_free(szName);
-	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pData));
-	OOOCheck(OOOCall(pData, checked));
-	OOODestroy(pData);
+	get(iRepository, TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+
+	/* Should write modules to the file system in the directory specified */
+
+	/* Should report errors encountered while writing modules to the file system in the directory specified */
 
 	OOODestroy(pRepository);
 }

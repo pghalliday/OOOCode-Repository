@@ -1,2 +1,2 @@
-#include "OOOInMemoryRepository.Test.h"
+#include "OOOTestCache.Test.h"
 #include "OOOCacheRepository.Test.h"
