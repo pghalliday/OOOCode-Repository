@@ -7,7 +7,7 @@
 #define OOOInterface OOOIRepositoryData
 OOOVirtuals
 	OOOVirtual(char *, getName)
-	OOOVirtual(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
+	OOOVirtual(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
 OOOVirtualsEnd
 #undef OOOInterface
 

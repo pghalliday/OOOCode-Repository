@@ -46,7 +46,7 @@ OOOMethod(char *, getName)
 }
 OOOMethodEnd
 
-OOOMethod(void, load, OOOIError * iError, unsigned char * pData, size_t uSize)
+OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
 {
 	unsigned char * pCachedData;
 	size_t uCachedSize;
@@ -133,7 +133,7 @@ OOOConstructor()
 	#define OOOInterface OOOIRepositoryData
 	OOOMapVirtuals
 		OOOMapVirtual(getName)
-		OOOMapVirtual(load)
+		OOOMapVirtual(data)
 	OOOMapVirtualsEnd
 	#undef OOOInterface
 

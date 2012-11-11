@@ -40,7 +40,7 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 		if (O_strcmp(pEntry->szName, szName) == 0)
 		{
 			OOOICall(OOOF(iCache), set, szName, pEntry->pData, pEntry->uSize);
-			OOOICall(iRepositoryData, load, NULL, pEntry->pData, pEntry->uSize);
+			OOOICall(iRepositoryData, data, NULL, pEntry->pData, pEntry->uSize);
 			break;
 		}
 		pEntry = pEntry->pNext;
@@ -49,7 +49,7 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 	if (!pEntry)
 	{
 		OOOError * pError = OOOConstruct(OOOError, "UNKNOWN MODULE");
-		OOOICall(iRepositoryData, load, OOOCast(OOOIError, pError), NULL, 0);
+		OOOICall(iRepositoryData, data, OOOCast(OOOIError, pError), NULL, 0);
 		OOODestroy(pError);
 	}
 }
