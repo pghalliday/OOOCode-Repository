@@ -13,7 +13,7 @@ OOODeclareEnd
 
 OOOPrivateData
 	char * szName;
-	OOOIError * iError;
+	char * szError;
 	unsigned char * pData;
 	size_t uSize;
 	bool bChecked;
@@ -29,9 +29,9 @@ OOOMethodEnd
 OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
 	OOOCheck(pData == OOOF(pData));
 	OOOCheck(uSize == OOOF(uSize));
-	if (OOOF(iError))
+	if (OOOF(szError))
 	{
-		OOOCheck(O_strcmp(/* TODO */));
+		OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
 	}
 	else
 	{
@@ -44,7 +44,7 @@ OOOMethod(bool, checked)
 	return OOOF(bChecked);
 OOOMethodEnd
 
-OOOConstructor(char * szName, OOOIError * iError, unsigned char * pData, size_t uSize)
+OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSize)
 #define OOOInterface OOOIRepositoryData
 	OOOMapVirtuals
 		OOOMapVirtual(getName)
@@ -57,7 +57,7 @@ OOOConstructor(char * szName, OOOIError * iError, unsigned char * pData, size_t 
 	OOOMapMethodsEnd
 
 	OOOF(szName) = szName;
-	OOOF(iError) = iError;
+	OOOF(szError) = szError;
 	OOOF(pData) = pData;
 	OOOF(uSize) = uSize;
 OOOConstructorEnd
