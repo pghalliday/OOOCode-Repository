@@ -1,5 +1,6 @@
 #include "OOOUnitTestDefines.h"
 #include "OOOCacheRepository.h"
+#include "OOOFile.h"
 
 #define MY_DATA_NAME		"MyData"
 #define MY_DATA				"This is a test"
@@ -169,9 +170,11 @@ OOOTest(OOOCacheRepository)
 	OOOIRepository * iRepository;
 	OOOICache * iCache;
 	char * szName;
+	OOOFile * pFile;
 
 	/* Should construct */
-	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository);
+	OOODirectory * pDirectory = OOOConstruct(OOODirectory, CACHE_DIRECTORY);
+	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, pDirectory);
 	OOOCheck(pRepository != NULL);
 
 	/* Should implement the OOOIRepository interface */
@@ -208,4 +211,5 @@ OOOTest(OOOCacheRepository)
 	/* Should report errors encountered while writing modules to the file system in the directory specified */
 
 	OOODestroy(pRepository);
+	OOODestroy(pDirectory);
 }

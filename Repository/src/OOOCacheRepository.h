@@ -4,9 +4,10 @@
 #include "OOOCode.h"
 #include "OOOIRepository.h"
 #include "OOOICache.h"
+#include "OOODirectory.h"
 
 #define OOOClass OOOCacheRepository
-OOODeclare()
+OOODeclare(OOODirectory * pDirectory)
 	OOOImplements
 		OOOImplement(OOOIRepository)
 		OOOImplement(OOOICache)
