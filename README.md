@@ -1,45 +1,199 @@
 OOOCode-Repository
 ==================
 
-OOOCode Repository interface for named lumps of data.
+OOOCode Repository interface for retrieving named lumps of data.
 
 ## Features
 
-- Should expose a repository interface supporting asynchronous implementations
-- Should implement an in memory repository
-- OOOInMemoryRepository should add modules to a cache
+### OOOIRepository interface
+
+- Should support getting named data
+- Should support asynchronous implementations
+
+### OOOCacheRepository
+
+- Should implement the OOOICache interface
+- Should support chaining to other OOOCacheRepository instances
+- Should cache data to the file system
 
 ## API
 
-OOOInMemoryRepository class
+### To implement an OOOIRepository
+
+MyRepository.h
 
 ```C
-#include "OOOInMemoryRepository.h"
+#ifndef OOOMyRepository_H
+#define OOOMyRepository_H
 
-unsigned char aMyData[] =
+#include "OOOIRepository.h"
+
+#define OOOClass OOOMyRepository
+OOODeclare()
+    OOOImplements
+        OOOImplement(OOOIRepository)
+    OOOImplementsEnd
+    OOOExports
+    OOOExportsEnd
+OOODeclareEnd
+#undef OOOClass
+
+#endif
+```
+
+MyRepository.c
+
+```C
+#include "OOOMyRepository.h"
+
+#define OOOClass OOOMyRepository
+
+OOOPrivateData
+OOOPrivateDataEnd
+
+OOODestructor
 {
-  ...
-};
-size_t uMyDataSize = sizeof(aMyData)
+}
+OOODestructorEnd
 
-/* Cache should implement the OOOICache interface */
-Cache * pCache = OOOConstruct(Cache);
-OOOInMemoryRepository * pRepository = OOOConstruct(OOOInMemoryRepository, OOOCast(OOOICache, pCache));
-OOOCall(pRepository, add, "MYDATA", aMyData, uMyDataSize);
+OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
+{
+    unsigned char * pData;
+    size_t uSize;
+    char * szName = OOOICall(iRepositoryData, getName);
+
+    /* TODO: Retrieve the data */
+
+    /* Notify the cache data instance that caching is complete */
+    OOOICall(iRepositoryData, data, NULL, pData, uSize);
+}
+OOOMethodEnd
+
+OOOConstructor()
+{
+#define OOOInterface OOOIRepository
+    OOOMapVirtuals
+        OOOMapVirtual(get)
+    OOOMapVirtualsEnd
+#undef OOOInterface
+}
+OOOConstructorEnd
+
+#undef OOOClass
+```
+
+### To use OOOCacheRepository
+
+```C
+#include "OOOCacheRepository.h"
+
+OOOTestRepository * pRepository;
+unsigned char pMyData[] =
+{
+    ...
+}
+size_t uMySize = sizeof(pMyData);
+
+/* Declare a private data class */
+
+#define OOOClass MyPrivateData
+OOODeclare(char * szName, unsigned char * pData, size_t uSize)
+    OOOImplements
+        OOOImplement(OOOICacheData)
+        OOOImplement(OOOIRepositoryData)
+    OOOImplementsEnd
+    OOOExports
+    OOOExportsEnd
+OOODeclareEnd
+#undef
+
+static void start()
+{
+    MyPrivateData * pMyPrivateData = OOOConstruct(MyPrivateData, "Test", pMyData, uMySize);
+    pRepository = OOOConstruct(OOOCacheRepository);
+    OOOICall(OOOCast(OOOICache, pRepository), set, OOOCast(OOOICacheData, pMyPrivateData));
+}
+
+static void cached(MyPrivateData * pMyPrivateData, OOOIError * iError)
+{
+    assert(iError == NULL);
+    OOOICall(OOOCast(OOOIRepository, pRepository), get, OOOCast(OOOIRepositoryData, pMyPrivateData));
+}
+
+static void data(MyPrivateData * pMyPrivateData, OOOIError * iError, unsigned char * pData, size_t uSize)
+{
+    OOODestroy(pMyPrivateData);
+
+    assert(iError == NULL);
+    assert(pData == pMyData);
+    assert(uSize == uMySize);
+
+    OOODestroy(pRepository);
+}
 
 
-/*
-MyRepositoryData should implement the OOOIRepositoryData interface
-and handle the data when it has been loaded
-*/
-MyRepositoryData * pRepositoryData = OOOConstruct(MyRepositoryData);
+/* Implement the private data class */
 
-OOOICall(OOOCast(OOOIRepository, pRepository), get, OOOCast(OOOIRepositoryData, pRepositoryData));
+#define OOOClass MyPrivateData
+OOOPrivateData
+    char * szName;
+    unsigned char * pData;
+    size_t uSize;
+OOOPrivateDataEnd
+
+OOODestructor
+OOODestructorEnd
+
+OOOMethod(char *, getName)
+    return OOOF(szName);
+OOOMethodEnd
+
+OOOMethod(unsigned char *, getData)
+    return OOOF(pData);
+OOOMethodEnd
+
+OOOMethod(size_t, getSize)
+    return OOOF(uSize);
+OOOMethodEnd
+
+OOOMethod(void, cached, OOOIError * iError)
+    cached(OOOThis, iError);
+OOOMethodEnd
+
+OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
+    data(OOOThis, iError, pData, uSize);
+OOOMethodEnd
+
+OOOConstructor(char * szName, unsigned char * pData, size_t uSize)
+#define OOOInterface OOOICacheData
+    OOOMapVirtuals
+        OOOMapVirtual(getName)
+        OOOMapVirtual(getData)
+        OOOMapVirtual(getSize)
+        OOOMapVirtual(cached)
+    OOOMapVirtualsEnd
+#undef OOOInterface
+
+#define OOOInterface OOOIRepositoryData
+    OOOMapVirtuals
+        OOOMapVirtual(getName)
+        OOOMapVirtual(data)
+    OOOMapVirtualsEnd
+#undef OOOInterface
+
+    OOOMapMethods
+    OOOMapMethodsEnd
+
+    OOOF(szName) = szName;
+    OOOF(pData) = pData;
+    OOOF(uSize) = uSize;
+OOOConstructorEnd
+#undef OOOClass
 ```
 
 ## Roadmap
 
-* Should implement a cache repository to cache data loaded from other repositories
+- Should implement a proxy repository to chain respositories that do not chain
 - Should implement an in band repository to load data from broadcast
 - Should implement a remote repository to load data from the network
 
