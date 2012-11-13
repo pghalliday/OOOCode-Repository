@@ -170,7 +170,6 @@ OOOTest(OOOCacheRepository)
 	OOOIRepository * iRepository;
 	OOOICache * iCache;
 	char * szName;
-	OOOFile * pFile;
 
 	/* Should construct */
 	OOODirectory * pDirectory = OOOConstruct(OOODirectory, CACHE_DIRECTORY);
