@@ -3,18 +3,29 @@ OOOCode-Repository
 
 OOOCode Repository interface for retrieving named lumps of data.
 
-## Features
-
-### OOOIRepository interface
+## OOOIRepository interface
 
 - Should support getting named data
 - Should support asynchronous implementations
 
-### OOOCacheRepository
+### Roadmap
+
+- Nothing yet
+
+## OOOCacheRepository
 
 - Should implement the OOOICache interface
+
+### Roadmap
+
 - Should support chaining to other OOOCacheRepository instances
 - Should cache data to the file system
+
+## Roadmap
+
+- Should implement a proxy repository to chain repositories that do not chain
+- Should implement an in band repository to load data from broadcast
+- Should implement a remote repository to load data from the network
 
 ## API
 
@@ -190,12 +201,6 @@ OOOConstructor(char * szName, unsigned char * pData, size_t uSize)
 OOOConstructorEnd
 #undef OOOClass
 ```
-
-## Roadmap
-
-- Should implement a proxy repository to chain respositories that do not chain
-- Should implement an in band repository to load data from broadcast
-- Should implement a remote repository to load data from the network
 
 ## Contributing
 
