@@ -32,6 +32,7 @@ void recursiveDelete(char * szPath)
 				}
 			}
 		}
+		O_free(szChildPath);
 		O_dir_close(pDir);
 		assert(O_dir_remove(szPath) == SUCCESS);
 	}
@@ -95,8 +96,8 @@ OOOTest(OOODirectory)
 	OOOCheck(isDirectory(TEST_DIRECTORY));
 
 	/* Should recursively delete a directory */
-	//OOOCheck(OOOCall(pDirectory1, delete));
-	//OOOCheck(!isDirectory(TEST_DIRECTORY1));
+	OOOCheck(OOOCall(pDirectory1, delete));
+	OOOCheck(!isDirectory(TEST_DIRECTORY1));
 
 	OOODestroy(pRelativeDirectory);
 	OOODestroy(pDirectory3);

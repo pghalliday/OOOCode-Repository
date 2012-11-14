@@ -44,7 +44,7 @@ OOOMethod(bool, create)
 		O_free(szParentPath);
 		if (bSuccess)
 		{
-			bSuccess = O_dir_create(OOOF(szPath), OTV_WORLD_READ_WRITE_PERMISSION, UINT_MAX) == SUCCESS;
+			bSuccess = (O_dir_create(OOOF(szPath), OTV_WORLD_READ_WRITE_PERMISSION, UINT_MAX) == SUCCESS);
 		}
 	}
 	return bSuccess;
@@ -53,7 +53,45 @@ OOOMethodEnd
 
 OOOMethod(bool, delete)
 {
-	return FALSE;
+	bool bSuccess = TRUE;
+	o_dir * pDir = O_dir_open(OOOF(szPath));
+	if (pDir)
+	{
+		o_dirent tDirent;
+		char * szChildPath = O_calloc(O_strlen(OOOF(szPath)) + 1 + OTV_MAX_FILE_NAME_LENGTH + 1, sizeof(char));
+		char * szInsert = szChildPath + O_strlen(OOOF(szPath)) + 1;
+		O_strcpy(szChildPath, OOOF(szPath));
+		O_strcat(szChildPath, "/");
+		while (bSuccess && O_dir_read(pDir, &tDirent))
+		{
+			o_stat tStat;
+			O_strcpy(szInsert, tDirent.d_name);
+			if (O_file_get_stat(szChildPath, &tStat) == SUCCESS)
+			{
+				if (tStat.permissions & OTV_DIRECTORY_FLAG == OTV_DIRECTORY_FLAG)
+				{
+					OOODirectory * pDirectory = OOOConstruct(OOODirectory, NULL, szChildPath);
+					bSuccess = OOOCall(pDirectory, delete);
+					OOODestroy(pDirectory);
+				}
+				else
+				{
+					bSuccess = (O_file_remove(szChildPath) == SUCCESS);
+				}
+			}
+		}
+		O_free(szChildPath);
+		O_dir_close(pDir);
+		if (bSuccess)
+		{
+			bSuccess = (O_dir_remove(OOOF(szPath)) == SUCCESS);
+		}
+	}
+	else
+	{
+		bSuccess = FALSE;
+	}
+	return bSuccess;
 }
 OOOMethodEnd
 
