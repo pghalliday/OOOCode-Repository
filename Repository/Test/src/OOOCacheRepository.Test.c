@@ -175,7 +175,7 @@ OOOTest(OOOCacheRepository)
 	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, pDirectory);
 
 	/* start by removing the cache directory */
-	//OOOCall(pDirectory, delete);
+	OOOCall(pDirectory, delete);
 
 	/* Should implement the OOOIRepository interface */
 	iRepository = OOOCast(OOOIRepository, pRepository);
