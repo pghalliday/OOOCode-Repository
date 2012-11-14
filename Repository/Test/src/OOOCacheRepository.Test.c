@@ -171,10 +171,11 @@ OOOTest(OOOCacheRepository)
 	OOOICache * iCache;
 	char * szName;
 
-	/* Should construct */
-	OOODirectory * pDirectory = OOOConstruct(OOODirectory, CACHE_DIRECTORY);
+	OOODirectory * pDirectory = OOOConstruct(OOODirectory, NULL, CACHE_DIRECTORY);
 	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, pDirectory);
-	OOOCheck(pRepository != NULL);
+
+	/* start by removing the cache directory */
+	//OOOCall(pDirectory, delete);
 
 	/* Should implement the OOOIRepository interface */
 	iRepository = OOOCast(OOOIRepository, pRepository);
