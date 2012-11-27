@@ -12,7 +12,7 @@
 #define CACHE_DIRECTORY		"/cache"
 
 #define OOOClass TestCacheData
-OOODeclare(char * szName, char * szError, unsigned char * pData, size_t uSize)
+OOODeclarePrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOICacheData)
 	OOOImplementsEnd
@@ -63,7 +63,7 @@ OOOMethod(bool, wasChecked)
 	return OOOF(bChecked);
 OOOMethodEnd
 
-OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSize)
+OOOConstructorPrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 #define OOOInterface OOOICacheData
 	OOOMapVirtuals
 		OOOMapVirtual(getName)
@@ -85,7 +85,7 @@ OOOConstructorEnd
 #undef OOOClass
 
 #define OOOClass TestRepositoryData
-OOODeclare(char * szName, char * szError, unsigned char * pData, size_t uSize)
+OOODeclarePrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOIRepositoryData)
 	OOOImplementsEnd
@@ -130,7 +130,7 @@ OOOMethod(bool, wasChecked)
 	return OOOF(bChecked);
 OOOMethodEnd
 
-OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSize)
+OOOConstructorPrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 #define OOOInterface OOOIRepositoryData
 	OOOMapVirtuals
 		OOOMapVirtual(getName)
@@ -143,6 +143,74 @@ OOOConstructor(char * szName, char * szError, unsigned char * pData, size_t uSiz
 	OOOMapMethodsEnd
 
 	OOOF(szName) = szName;
+	OOOF(szError) = szError;
+	OOOF(pData) = pData;
+	OOOF(uSize) = uSize;
+OOOConstructorEnd
+#undef OOOClass
+
+#define OOOClass TestFileReadData
+OOODeclarePrivate(char * szError, unsigned char * pData, size_t uSize)
+	OOOImplements
+		OOOImplement(OOOIFileReadData)
+	OOOImplementsEnd
+	OOOExports
+		OOOExport(bool, wasChecked)
+	OOOExportsEnd
+OOODeclareEnd
+
+OOOPrivateData
+	char * szError;
+	unsigned char * pData;
+	size_t uSize;
+	bool bChecked;
+OOOPrivateDataEnd
+
+OOODestructor
+OOODestructorEnd
+
+OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
+	if (OOOF(pData))
+	{
+		if (OOOCheck((bool) pData))
+		{
+			OOOCheck(O_strcmp(pData, OOOF(pData)) == 0);
+		}
+	}
+	else
+	{
+		OOOCheck(pData == NULL);
+	}
+	OOOCheck(uSize == OOOF(uSize));
+	if (OOOF(szError))
+	{
+		if (OOOCheck(iError != NULL))
+		{
+			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
+		}
+	}
+	else
+	{
+		OOOCheck(iError == NULL);
+	}
+	OOOF(bChecked) = TRUE;
+OOOMethodEnd
+
+OOOMethod(bool, wasChecked)
+	return OOOF(bChecked);
+OOOMethodEnd
+
+OOOConstructorPrivate(char * szError, unsigned char * pData, size_t uSize)
+#define OOOInterface OOOIFileReadData
+	OOOMapVirtuals
+		OOOMapVirtual(data)
+	OOOMapVirtualsEnd
+#undef OOOInterface
+
+	OOOMapMethods
+		OOOMapMethod(wasChecked)
+	OOOMapMethodsEnd
+
 	OOOF(szError) = szError;
 	OOOF(pData) = pData;
 	OOOF(uSize) = uSize;
@@ -163,6 +231,16 @@ static void get(OOOIRepository * iRepository, char * szName, char * szError, uns
 	OOOICall(iRepository, get, OOOCast(OOOIRepositoryData, pTestRepositoryData));
 	OOOCheck(OOOCall(pTestRepositoryData, wasChecked));
 	OOODestroy(pTestRepositoryData);
+}
+
+static void checkFile(OOODirectory * pDirectory, char * szPath, char * szError, unsigned char * pData, size_t uSize)
+{
+	OOOFile * pFile = OOOConstruct(OOOFile, pDirectory, szPath);
+	TestFileReadData * pTestFileReadData = OOOConstruct(TestFileReadData, szError, pData, uSize);
+	OOOCall(OOOCast(OOOIFile, pFile), read, OOOCast(OOOIFileReadData, pTestFileReadData));
+	OOOCheck(OOOCall(pTestFileReadData, wasChecked));
+	OOODestroy(pTestFileReadData);
+	OOODestroy(pFile);
 }
 
 OOOTest(OOOCacheRepository)
@@ -207,8 +285,11 @@ OOOTest(OOOCacheRepository)
 	get(iRepository, TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
 	/* Should write modules to the file system in the directory specified */
+//	checkFile(pDirectory, MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+//	checkFile(pDirectory, YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+//	checkFile(pDirectory, TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
-	/* Should report errors encountered while writing modules to the file system in the directory specified */
+	/* TODO: Should report errors encountered while writing modules to the file system in the directory specified */
 
 	OOODestroy(pRepository);
 	OOODestroy(pDirectory);

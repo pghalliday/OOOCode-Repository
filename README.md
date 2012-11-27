@@ -34,12 +34,12 @@ OOOCode Repository interface for retrieving named lumps of data.
 MyRepository.h
 
 ```C
-#ifndef OOOMyRepository_H
-#define OOOMyRepository_H
+#ifndef MyRepository_H
+#define MyRepository_H
 
 #include "OOOIRepository.h"
 
-#define OOOClass OOOMyRepository
+#define OOOClass MyRepository
 OOODeclare()
     OOOImplements
         OOOImplement(OOOIRepository)
@@ -55,9 +55,9 @@ OOODeclareEnd
 MyRepository.c
 
 ```C
-#include "OOOMyRepository.h"
+#include "MyRepository.h"
 
-#define OOOClass OOOMyRepository
+#define OOOClass MyRepository
 
 OOOPrivateData
 OOOPrivateDataEnd
@@ -98,7 +98,7 @@ OOOConstructorEnd
 ```C
 #include "OOOCacheRepository.h"
 
-OOOTestRepository * pRepository;
+OOOCacheRepository * pRepository;
 unsigned char pMyData[] =
 {
     ...
@@ -234,9 +234,6 @@ After you have built the projects at least once run the test application in the 
 1. Choosing the **RepositoryFlow** project on the left
 1. Pressing the green **Run** button at the top
 1. In the resulting dialog choose **Local OpenTV Application** and press **OK**
-
-## Release History
-_(Nothing yet)_
 
 ## License
 Copyright (c) 2012 Peter Halliday  
