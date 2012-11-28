@@ -77,7 +77,7 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 }
 OOOMethodEnd
 
-OOOConstructor(OOODirectory * pDirectory)
+OOOConstructor(OOOIFileSystem * iFileSystem, char * szDirectory)
 {
 #define OOOInterface OOOICache
 	OOOMapVirtuals

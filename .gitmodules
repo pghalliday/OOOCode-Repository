@@ -13,3 +13,6 @@
 [submodule "Repository/submodules/Cache"]
 	path = Repository/submodules/Cache
 	url = https://github.com/pghalliday/OOOCode-Cache.git
+[submodule "Repository/submodules/FileSystem"]
+	path = Repository/submodules/FileSystem
+	url = https://github.com/pghalliday/OOOCode-FileSystem.git
