@@ -225,7 +225,7 @@ OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize)
 {
 	if (iError)
 	{
-		OOOError(OOOCall(iError, toString));
+		OOOError(OOOICall(iError, toString));
 	}
 	else
 	{
@@ -336,9 +336,9 @@ OOOTest(OOOCacheRepository)
 	get(iRepository, TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
 	/* Should write modules to the file system in the directory specified */
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
 	/* TODO: Should report errors encountered while writing modules to the file system in the directory specified */
 
