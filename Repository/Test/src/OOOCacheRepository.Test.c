@@ -11,38 +11,6 @@
 
 #define CACHE_DIRECTORY		"/cache"
 
-void recursiveDelete(char * szPath)
-{
-	o_dir * pDir = O_dir_open(szPath);
-	if (pDir)
-	{
-		o_dirent tDirent;
-		char * szChildPath = O_calloc(O_strlen(szPath) + 1 + OTV_MAX_FILE_NAME_LENGTH + 1, sizeof(char));
-		char * szInsert = szChildPath + O_strlen(szPath) + 1;
-		O_strcpy(szChildPath, szPath);
-		O_strcat(szChildPath, "/");
-		while (O_dir_read(pDir, &tDirent))
-		{
-			o_stat tStat;
-			O_strcpy(szInsert, tDirent.d_name);
-			if (O_file_get_stat(szChildPath, &tStat) == SUCCESS)
-			{
-				if (tStat.permissions & OTV_DIRECTORY_FLAG == OTV_DIRECTORY_FLAG)
-				{
-					recursiveDelete(szChildPath);
-				}
-				else
-				{
-					assert(O_file_remove(szChildPath) == SUCCESS);
-				}
-			}
-		}
-		O_free(szChildPath);
-		O_dir_close(pDir);
-		assert(O_dir_remove(szPath) == SUCCESS);
-	}
-}
-
 #define OOOClass TestCacheData
 OOODeclarePrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
@@ -181,24 +149,17 @@ OOOConstructorPrivate(char * szName, char * szError, unsigned char * pData, size
 OOOConstructorEnd
 #undef OOOClass
 
-#define OOOClass TestFileData
-OOODeclarePrivate(char * szError, char * szPath, unsigned char * pData, size_t uSize)
+#define OOOClass Directory
+OOODeclarePrivate(char * szPath)
 	OOOImplements
-		OOOImplement(OOOIFileReadData)
-		OOOImplement(OOOIFileWriteData)
-		OOOImplement(OOOIFileRemoveData)
+		OOOImplement(OOOIDirectoryRemoveData)
 	OOOImplementsEnd
 	OOOExports
-		OOOExport(bool, wasChecked)
 	OOOExportsEnd
 OOODeclareEnd
 
 OOOPrivateData
-	char * szError;
 	char * szPath;
-	unsigned char * pData;
-	size_t uSize;
-	bool bChecked;
 OOOPrivateDataEnd
 
 OOODestructor
@@ -210,119 +171,18 @@ OOOMethod(char *, getPath)
 }
 OOOMethodEnd
 
-OOOMethod(unsigned char *, getData)
-{
-	return OOOF(pData);
-}
-OOOMethodEnd
-
-OOOMethod(size_t, getSize)
-{
-	return OOOF(uSize);
-}
-OOOMethodEnd
-
-OOOMethod(void, written, OOOIError * iError)
-{
-	if (OOOF(szError))
-	{
-		if (OOOCheck(iError != NULL))
-		{
-			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
-		}
-	}
-	else
-	{
-		if (!OOOCheck(iError == NULL))
-		{
-			O_debug("Error: %s\n", OOOICall(iError, toString));
-		}
-
-		/* TODO: check the contents of the written file */
-	}
-	OOOF(bChecked) = TRUE;
-}
-OOOMethodEnd
-
-OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize)
-{
-	if (OOOF(pData))
-	{
-		if (OOOCheck((bool) pData))
-		{
-			OOOCheck(O_strcmp(pData, OOOF(pData)) == 0);
-		}
-	}
-	else
-	{
-		OOOCheck(pData == NULL);
-	}
-	OOOCheck(uSize == OOOF(uSize));
-	if (OOOF(szError))
-	{
-		if (OOOCheck(iError != NULL))
-		{
-			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
-		}
-	}
-	else
-	{
-		if (!OOOCheck(iError == NULL))
-		{
-			O_debug("Error: %s\n", OOOICall(iError, toString));
-		}
-	}
-	OOOF(bChecked) = TRUE;
-}
-OOOMethodEnd
-
 OOOMethod(void, removed, OOOIError * iError)
 {
-	if (OOOF(szError))
+	if (iError)
 	{
-		if (OOOCheck(iError != NULL))
-		{
-			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
-		}
+		OOOInfo("Error encountered deleting cache directory (probably doesn't exist): %s", OOOICall(iError, toString));
 	}
-	else
-	{
-		if (!OOOCheck(iError == NULL))
-		{
-			O_debug("Error: %s\n", OOOICall(iError, toString));
-		}
-
-		/* TODO: check that the file was removed */
-	}
-	OOOF(bChecked) = TRUE;
 }
 OOOMethodEnd
 
-OOOMethod(bool, wasChecked)
+OOOConstructorPrivate(char * szPath)
 {
-	return OOOF(bChecked);
-}
-OOOMethodEnd
-
-OOOConstructorPrivate(char * szError, char * szPath, unsigned char * pData, size_t uSize)
-{
-#define OOOInterface OOOIFileWriteData
-	OOOMapVirtuals
-		OOOMapVirtual(getPath)
-		OOOMapVirtual(getData)
-		OOOMapVirtual(getSize)
-		OOOMapVirtual(written)
-	OOOMapVirtualsEnd
-#undef OOOInterface
-
-#define OOOInterface OOOIFileReadData
-	OOOMapVirtuals
-		OOOMapVirtual(getPath)
-		OOOMapVirtual(read)
-	OOOMapVirtualsEnd
-#undef OOOInterface
-
-#define OOOInterface OOOIFileRemoveData
+#define OOOInterface OOOIDirectoryRemoveData
 	OOOMapVirtuals
 		OOOMapVirtual(getPath)
 		OOOMapVirtual(removed)
@@ -330,10 +190,73 @@ OOOConstructorPrivate(char * szError, char * szPath, unsigned char * pData, size
 #undef OOOInterface
 
 	OOOMapMethods
-		OOOMapMethod(wasChecked)
 	OOOMapMethodsEnd
 
-	OOOF(szError) = szError;
+	OOOF(szPath) = szPath;
+}
+OOOConstructorEnd
+#undef OOOClass
+
+#define OOOClass File
+OOODeclarePrivate(char * szPath, unsigned char * pData, size_t uSize)
+	OOOImplements
+		OOOImplement(OOOIFileReadData)
+	OOOImplementsEnd
+	OOOExports
+	OOOExportsEnd
+OOODeclareEnd
+
+OOOPrivateData
+	char * szPath;
+	unsigned char * pData;
+	size_t uSize;
+OOOPrivateDataEnd
+
+OOODestructor
+OOODestructorEnd
+
+OOOMethod(char *, getPath)
+{
+	return OOOF(szPath);
+}
+OOOMethodEnd
+
+OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize)
+{
+	if (iError)
+	{
+		OOOError(OOOCall(iError, toString));
+	}
+	else
+	{
+		OOOCheck(uSize == OOOF(uSize));
+		if (OOOF(pData))
+		{
+			if (OOOCheck((bool) pData))
+			{
+				OOOCheck(O_strcmp(pData, OOOF(pData)) == 0);
+			}
+		}
+		else
+		{
+			OOOCheck(pData == NULL);
+		}
+	}
+}
+OOOMethodEnd
+
+OOOConstructorPrivate(char * szPath, unsigned char * pData, size_t uSize)
+{
+#define OOOInterface OOOIFileReadData
+	OOOMapVirtuals
+		OOOMapVirtual(getPath)
+		OOOMapVirtual(read)
+	OOOMapVirtualsEnd
+#undef OOOInterface
+
+	OOOMapMethods
+	OOOMapMethodsEnd
+
 	OOOF(szPath) = szPath;
 	OOOF(pData) = pData;
 	OOOF(uSize) = uSize;
@@ -357,12 +280,18 @@ static void get(OOOIRepository * iRepository, char * szName, char * szError, uns
 	OOODestroy(pTestRepositoryData);
 }
 
-static void readFile(OOOFileSystem * pFileSystem, char * szPath, char * szError, unsigned char * pData, size_t uSize)
+static void removeDirectory(OOOFileSystem * pFileSystem, char * szPath)
 {
-	TestFileData * pTestFileData = OOOConstruct(TestFileData, szError, szPath, pData, uSize);
-	OOOICall(OOOCast(OOOIFileSystem, pFileSystem), readFile, OOOCast(OOOIFileReadData, pTestFileData));
-	OOOCheck(OOOCall(pTestFileData, wasChecked));
-	OOODestroy(pTestFileData);
+	Directory * pDirectory = OOOConstruct(Directory, szPath);
+	OOOICall(OOOCast(OOOIFileSystem, pFileSystem), removeDirectory, OOOCast(OOOIDirectoryRemoveData, pDirectory));
+	OOODestroy(pDirectory);
+}
+
+static void readFile(OOOFileSystem * pFileSystem, char * szPath, unsigned char * pData, size_t uSize)
+{
+	File * pFile = OOOConstruct(File, szPath, pData, uSize);
+	OOOICall(OOOCast(OOOIFileSystem, pFileSystem), readFile, OOOCast(OOOIFileReadData, pFile));
+	OOODestroy(pFile);
 }
 
 OOOTest(OOOCacheRepository)
@@ -375,7 +304,7 @@ OOOTest(OOOCacheRepository)
 	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, OOOCast(OOOIFileSystem, pFileSystem), CACHE_DIRECTORY);
 
 	/* start by removing the cache directory */
-	recursiveDelete(CACHE_DIRECTORY);
+	removeDirectory(pFileSystem, CACHE_DIRECTORY);
 
 	/* Should implement the OOOIRepository interface */
 	iRepository = OOOCast(OOOIRepository, pRepository);
