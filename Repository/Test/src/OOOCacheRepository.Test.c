@@ -3,13 +3,19 @@
 #include "OOOFileSystem.h"
 
 #define MY_DATA_NAME		"MyData"
-#define MY_DATA				"This is a test"
+#define MY_DATA				"123456789"	/* 10 bytes including the 0 terminator */
 #define YOUR_DATA_NAME		"YourData"
-#define YOUR_DATA			"This is also a test"
+#define YOUR_DATA			"987654321"	/* 10 bytes including the 0 terminator */
 #define UNKNOWN_DATA_NAME	"UnknownData"
 #define TEMP_DATA_NAME		"TempData"
+#define EXCESS_DATA_NAME	"ExcessData"
 
 #define CACHE_DIRECTORY		"/cache"
+#define CACHE_SIZE			35
+
+/*
+ * Private ICacheData implementation
+ */
 
 #define OOOClass TestCacheData
 OOODeclarePrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
@@ -84,6 +90,10 @@ OOOConstructorPrivate(char * szName, char * szError, unsigned char * pData, size
 OOOConstructorEnd
 #undef OOOClass
 
+/*
+ * Private OOOIRepositoryData implementation
+ */
+
 #define OOOClass TestRepositoryData
 OOODeclarePrivate(char * szName, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
@@ -149,6 +159,10 @@ OOOConstructorPrivate(char * szName, char * szError, unsigned char * pData, size
 OOOConstructorEnd
 #undef OOOClass
 
+/*
+ * Private OOOIDirectoryRemoveData implementation
+ */
+
 #define OOOClass Directory
 OOODeclarePrivate(char * szPath)
 	OOOImplements
@@ -197,8 +211,12 @@ OOOConstructorPrivate(char * szPath)
 OOOConstructorEnd
 #undef OOOClass
 
+/*
+ * Private OOOIFileReadData implementation
+ */
+
 #define OOOClass File
-OOODeclarePrivate(char * szPath, unsigned char * pData, size_t uSize)
+OOODeclarePrivate(char * szPath, char * szError, unsigned char * pData, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOIFileReadData)
 	OOOImplementsEnd
@@ -208,6 +226,7 @@ OOODeclareEnd
 
 OOOPrivateData
 	char * szPath;
+	char * szError;
 	unsigned char * pData;
 	size_t uSize;
 OOOPrivateDataEnd
@@ -223,29 +242,43 @@ OOOMethodEnd
 
 OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize)
 {
-	if (iError)
+	if (OOOF(szError))
 	{
-		OOOError(OOOICall(iError, toString));
+		if (OOOCheck(iError != NULL))
+		{
+			char * szError = OOOICall(iError, toString);
+			if (O_strcmp(OOOF(szError), szError) != 0)
+			{
+				OOOError("expected: %s: received: %s", OOOF(szError), szError);
+			}
+		}
 	}
 	else
 	{
-		OOOCheck(uSize == OOOF(uSize));
-		if (OOOF(pData))
+		if (iError)
 		{
-			if (OOOCheck((bool) pData))
-			{
-				OOOCheck(O_strcmp(pData, OOOF(pData)) == 0);
-			}
+			OOOError(OOOICall(iError, toString));
 		}
 		else
 		{
-			OOOCheck(pData == NULL);
+			OOOCheck(uSize == OOOF(uSize));
+			if (OOOF(pData))
+			{
+				if (OOOCheck((bool) pData))
+				{
+					OOOCheck(O_strcmp(pData, OOOF(pData)) == 0);
+				}
+			}
+			else
+			{
+				OOOCheck(pData == NULL);
+			}
 		}
 	}
 }
 OOOMethodEnd
 
-OOOConstructorPrivate(char * szPath, unsigned char * pData, size_t uSize)
+OOOConstructorPrivate(char * szPath, char * szError, unsigned char * pData, size_t uSize)
 {
 #define OOOInterface OOOIFileReadData
 	OOOMapVirtuals
@@ -258,6 +291,7 @@ OOOConstructorPrivate(char * szPath, unsigned char * pData, size_t uSize)
 	OOOMapMethodsEnd
 
 	OOOF(szPath) = szPath;
+	OOOF(szError) = szError;
 	OOOF(pData) = pData;
 	OOOF(uSize) = uSize;
 }
@@ -287,9 +321,9 @@ static void removeDirectory(OOOFileSystem * pFileSystem, char * szPath)
 	OOODestroy(pDirectory);
 }
 
-static void readFile(OOOFileSystem * pFileSystem, char * szPath, unsigned char * pData, size_t uSize)
+static void readFile(OOOFileSystem * pFileSystem, char * szPath, char * szError, unsigned char * pData, size_t uSize)
 {
-	File * pFile = OOOConstruct(File, szPath, pData, uSize);
+	File * pFile = OOOConstruct(File, szPath, szError, pData, uSize);
 	OOOICall(OOOCast(OOOIFileSystem, pFileSystem), readFile, OOOCast(OOOIFileReadData, pFile));
 	OOODestroy(pFile);
 }
@@ -301,7 +335,7 @@ OOOTest(OOOCacheRepository)
 	char * szName;
 
 	OOOFileSystem * pFileSystem = OOOConstruct(OOOFileSystem);
-	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, OOOCast(OOOIFileSystem, pFileSystem), CACHE_DIRECTORY);
+	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, OOOCast(OOOIFileSystem, pFileSystem), CACHE_DIRECTORY, CACHE_SIZE);
 
 	/* start by removing the cache directory */
 	removeDirectory(pFileSystem, CACHE_DIRECTORY);
@@ -336,11 +370,23 @@ OOOTest(OOOCacheRepository)
 	get(iRepository, TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
 	/* Should write modules to the file system in the directory specified */
-	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
-	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
-	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
 
-	/* TODO: Should report errors encountered while writing modules to the file system in the directory specified */
+	/*
+	 * Should limit the file system usage - 3 x 10 byte files have already
+	 * been written, writing another should push us over the 35 byte limit.
+	 * This should result in the MY_DATA_NAME file being deleted as it was
+	 * used least recently
+	 */
+//	set(iCache, EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+//	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, "", NULL, 0);
+//	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+//	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+//	readFile(pFileSystem, CACHE_DIRECTORY "/" EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(MY_DATA) + 1);
+
+	/* TODO: should delete the cache directory on set if the manifest cannot be loaded */
 
 	OOODestroy(pRepository);
 	OOODestroy(pFileSystem);

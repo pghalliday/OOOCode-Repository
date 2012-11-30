@@ -7,7 +7,7 @@
 #include "OOOIFileSystem.h"
 
 #define OOOClass OOOCacheRepository
-OOODeclare(OOOIFileSystem * iFileSystem, char * szDirectory)
+OOODeclare(OOOIFileSystem * iFileSystem, char * szDirectory, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOIRepository)
 		OOOImplement(OOOICache)

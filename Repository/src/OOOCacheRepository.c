@@ -1,30 +1,63 @@
 #include "OOOCacheRepository.h"
 #include "OOOError.h"
 
-#define OOOClass File
-OOODeclarePrivate(OOOCacheRepository * pRepository, char * szDirectory, char * szFile, unsigned char * pData, size_t uSize, OOOICacheData * iCacheData)
+#define MANIFEST_FILE	".MANIFEST"
+
+/*
+ * Private CacheFile class declaration
+ */
+
+#define OOOClass CacheFile
+OOODeclarePrivate(OOOCacheRepository * pRepository, OOOICacheData * iCacheData)
 	OOOImplements
 		OOOImplement(OOOIFileWriteData)
 	OOOImplementsEnd
 	OOOExports
 	OOOExportsEnd
 OOODeclareEnd
+
+OOOPCDeclare(OOOICacheData *, getCacheData)
+OOOPCDeclare(unsigned char *, getData)
+OOOPCDeclare(size_t, getSize)
 #undef OOOClass
+
+/*
+ * Private ManifestFile class declaration
+ */
+
+#define OOOClass ManifestFile
+OOODeclarePrivate(OOOCacheRepository * pRepository)
+	OOOImplements
+		OOOImplement(OOOIFileWriteData)
+		OOOImplement(OOOIFileReadData)
+	OOOImplementsEnd
+	OOOExports
+	OOOExportsEnd
+OOODeclareEnd
+
+OOOPCDeclare(OOOICacheData *, getCacheData)
+OOOPCDeclare(void, setCacheData, OOOICacheData * iCacheData)
+#undef OOOClass
+
+/*
+ * OOOCacheRepository class implementation
+ */
 
 #define OOOClass OOOCacheRepository
 typedef struct _Entry Entry;
 struct _Entry
 {
 	char * szName;
-	unsigned char * pData;
-	size_t uSize;
+	CacheFile * pCacheFile;
 	Entry * pNext;
 };
 
 OOOPrivateData
 	OOOIFileSystem * iFileSystem;
 	char * szDirectory;
+	size_t uSize;
 	Entry * pEntries;
+	ManifestFile * pManifestFile;
 OOOPrivateDataEnd
 
 OOODestructor
@@ -36,27 +69,31 @@ OOODestructor
 		pLast = pEntry;
 		pEntry = pEntry->pNext;
 		O_free(pLast->szName);
+		OOODestroy(pLast->pCacheFile);
 		O_free(pLast);
 	}
 }
 OOODestructorEnd
 
-OOOMethod(void, written, File * pFile, OOOIError * iError, OOOICacheData * iCacheData)
+OOOMethod(char *, getDirectory)
 {
-	OOODestroy(pFile);
+	return OOOF(szDirectory);
+}
+OOOMethodEnd
+
+OOOMethod(void, cacheWritten, CacheFile * pCacheFile, OOOIError * iError)
+{
+	OOOICacheData * iCacheData = OOOPCCall(CacheFile, pCacheFile, getCacheData);
 	if (iError)
 	{
 		OOOICall(iCacheData, cached, iError);
+		OOODestroy(pCacheFile);
 	}
 	else
 	{
-		char * szName = OOOICall(iCacheData, getName);
-		unsigned char * pData = OOOICall(iCacheData, getData);
-		size_t uSize = OOOICall(iCacheData, getSize);
 		Entry * pEntry = O_malloc(sizeof(Entry));
-		pEntry->szName = O_strdup(szName);
-		pEntry->pData = pData;
-		pEntry->uSize = uSize;
+		pEntry->szName = O_strdup(OOOICall(iCacheData, getName));
+		pEntry->pCacheFile = pCacheFile;
 		pEntry->pNext = OOOF(pEntries);
 		OOOF(pEntries) = pEntry;
 		OOOICall(iCacheData, cached, NULL);
@@ -66,14 +103,14 @@ OOOMethodEnd
 
 OOOMethod(void, set, OOOICacheData * iCacheData)
 {
-	char * szName = OOOICall(iCacheData, getName);
-	unsigned char * pData = OOOICall(iCacheData, getData);
-	size_t uSize = OOOICall(iCacheData, getSize);
+	/*
+	 * TODO: Read the cache manifest
+	 */
 
-	if (szName)
+	if (OOOICall(iCacheData, getName))
 	{
-		File * pFile = OOOConstruct(File, OOOThis, OOOF(szDirectory), szName, pData, uSize, iCacheData);
-		OOOICall(OOOF(iFileSystem), writeFile, OOOCast(OOOIFileWriteData, pFile));
+		CacheFile * pCacheFile = OOOConstruct(CacheFile, OOOThis, iCacheData);
+		OOOICall(OOOF(iFileSystem), writeFile, OOOCast(OOOIFileWriteData, pCacheFile));
 	}
 	else
 	{
@@ -92,7 +129,14 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 	{
 		if (O_strcmp(pEntry->szName, szName) == 0)
 		{
-			OOOICall(iRepositoryData, data, NULL, pEntry->pData, pEntry->uSize);
+			OOOICall
+			(
+				iRepositoryData,
+				data,
+				NULL,
+				OOOPCCall(CacheFile, pEntry->pCacheFile, getData),
+				OOOPCCall(CacheFile, pEntry->pCacheFile, getSize)
+			);
 			break;
 		}
 		pEntry = pEntry->pNext;
@@ -106,7 +150,17 @@ OOOMethod(void, get, OOOIRepositoryData * iRepositoryData)
 }
 OOOMethodEnd
 
-OOOConstructor(OOOIFileSystem * iFileSystem, char * szDirectory)
+OOOMethod(void, manifestWritten, OOOIError * iError)
+{
+}
+OOOMethodEnd
+
+OOOMethod(void, manifestRead, OOOIError * iError)
+{
+}
+OOOMethodEnd
+
+OOOConstructor(OOOIFileSystem * iFileSystem, char * szDirectory, size_t uSize)
 {
 #define OOOInterface OOOICache
 	OOOMapVirtuals
@@ -125,11 +179,17 @@ OOOConstructor(OOOIFileSystem * iFileSystem, char * szDirectory)
 
 	OOOF(iFileSystem) = iFileSystem;
 	OOOF(szDirectory) = szDirectory;
+	OOOF(uSize) = uSize;
+	OOOF(pManifestFile) = OOOConstruct(ManifestFile, OOOThis);
 }
 OOOConstructorEnd
 #undef OOOClass
 
-#define OOOClass File
+/*
+ * Private CacheFile class implementation
+ */
+
+#define OOOClass CacheFile
 OOOPrivateData
 	OOOCacheRepository * pRepository;
 	char * szPath;
@@ -150,13 +210,13 @@ OOOMethod(char *, getPath)
 }
 OOOMethodEnd
 
-OOOMethod(unsigned char *, getData)
+OOOMethodDeclared(unsigned char *, getData)
 {
 	return OOOF(pData);
 }
 OOOMethodEnd
 
-OOOMethod(size_t, getSize)
+OOOMethodDeclared(size_t, getSize)
 {
 	return OOOF(uSize);
 }
@@ -164,11 +224,17 @@ OOOMethodEnd
 
 OOOMethod(void, written, OOOIError * iError)
 {
-	OOOPCCall(OOOCacheRepository, OOOF(pRepository), written, OOOThis, iError, OOOF(iCacheData));
+	OOOPCCall(OOOCacheRepository, OOOF(pRepository), cacheWritten, OOOThis, iError);
 }
 OOOMethodEnd
 
-OOOConstructorPrivate(OOOCacheRepository * pRepository, char * szDirectory, char * szFile, unsigned char * pData, size_t uSize, OOOICacheData * iCacheData)
+OOOMethodDeclared(OOOICacheData *, getCacheData)
+{
+	return OOOF(iCacheData);
+}
+OOOMethodEnd
+
+OOOConstructorPrivate(OOOCacheRepository * pRepository, OOOICacheData * iCacheData)
 {
 #define OOOInterface OOOIFileWriteData
 	OOOMapVirtuals
@@ -182,12 +248,110 @@ OOOConstructorPrivate(OOOCacheRepository * pRepository, char * szDirectory, char
 	OOOMapMethods
 	OOOMapMethodsEnd
 
-	OOOF(szPath) = O_dsprintf("%s/%s", szDirectory, szFile);
+	OOOF(szPath) = O_dsprintf
+	(
+		"%s/%s",
+		OOOPCCall(OOOCacheRepository, pRepository, getDirectory),
+		OOOICall(iCacheData, getName)
+	);
 	OOOF(pRepository) = pRepository;
-	OOOF(pData) = pData;
-	OOOF(uSize) = uSize;
 	OOOF(iCacheData) = iCacheData;
 }
 OOOConstructorEnd
 #undef OOOClass
 
+/*
+ * Private ManifestFile class implementation
+ */
+
+#define OOOClass ManifestFile
+OOOPrivateData
+	OOOCacheRepository * pRepository;
+	char * szPath;
+	char * szManifest;
+	OOOICacheData * iCacheData;
+OOOPrivateDataEnd
+
+OOODestructor
+{
+	if (OOOF(szManifest))
+	{
+		O_free(OOOF(szManifest));
+	}
+	O_free(OOOF(szPath));
+}
+OOODestructorEnd
+
+OOOMethod(char *, getPath)
+{
+	return OOOF(szPath);
+}
+OOOMethodEnd
+
+OOOMethod(unsigned char *, getData)
+{
+	return OOOF(szManifest);
+}
+OOOMethodEnd
+
+OOOMethod(size_t, getSize)
+{
+	return O_strlen(OOOF(szManifest) + 1);
+}
+OOOMethodEnd
+
+OOOMethod(void, written, OOOIError * iError)
+{
+	OOOPCCall(OOOCacheRepository, OOOF(pRepository), manifestWritten, iError);
+}
+OOOMethodEnd
+
+OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize)
+{
+	OOOPCCall(OOOCacheRepository, OOOF(pRepository), manifestRead, iError);
+}
+OOOMethodEnd
+
+OOOMethodDeclared(OOOICacheData *, getCacheData)
+{
+	return OOOF(iCacheData);
+}
+OOOMethodEnd
+
+OOOMethodDeclared(void, setCacheData, OOOICacheData * iCacheData)
+{
+	OOOF(iCacheData) = iCacheData;
+}
+OOOMethodEnd
+
+OOOConstructorPrivate(OOOCacheRepository * pRepository)
+{
+#define OOOInterface OOOIFileWriteData
+	OOOMapVirtuals
+		OOOMapVirtual(getPath)
+		OOOMapVirtual(getData)
+		OOOMapVirtual(getSize)
+		OOOMapVirtual(written)
+	OOOMapVirtualsEnd
+#undef OOOInterface
+
+#define OOOInterface OOOIFileReadData
+	OOOMapVirtuals
+		OOOMapVirtual(getPath)
+		OOOMapVirtual(read)
+	OOOMapVirtualsEnd
+#undef OOOInterface
+
+	OOOMapMethods
+	OOOMapMethodsEnd
+
+	OOOF(szPath) = O_dsprintf
+	(
+		"%s/%s",
+		OOOPCCall(OOOCacheRepository, pRepository, getDirectory),
+		MANIFEST_FILE
+	);
+	OOOF(pRepository) = pRepository;
+}
+OOOConstructorEnd
+#undef OOOClass
