@@ -1,6 +1,7 @@
 #include "OOOUnitTestDefines.h"
 #include "OOOCacheRepository.h"
 #include "OOOFileSystem.h"
+#include "OOOTestLog.h"
 
 #define MY_DATA_NAME		"MyData"
 #define MY_DATA				"123456789"	/* 10 bytes including the 0 terminator */
@@ -55,12 +56,19 @@ OOOMethod(void, cached, OOOIError * iError)
 	{
 		if (OOOCheck(iError != NULL))
 		{
-			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
+			char * szError = OOOICall(iError, toString);
+			if (O_strcmp(OOOF(szError), szError) != 0)
+			{
+				OOOError("expected: %s: received: %s", OOOF(szError), szError);
+			}
 		}
 	}
 	else
 	{
-		OOOCheck(iError == NULL);
+		if (iError)
+		{
+			OOOError(OOOICall(iError, toString));
+		}
 	}
 	OOOF(bChecked) = TRUE;
 OOOMethodEnd
@@ -120,18 +128,28 @@ OOOMethod(char *, getName)
 OOOMethodEnd
 
 OOOMethod(void, data, OOOIError * iError, unsigned char * pData, size_t uSize)
-	OOOCheck(pData == OOOF(pData));
-	OOOCheck(uSize == OOOF(uSize));
 	if (OOOF(szError))
 	{
 		if (OOOCheck(iError != NULL))
 		{
-			OOOCheck(O_strcmp(OOOICall(iError, toString), OOOF(szError)) == 0);
+			char * szError = OOOICall(iError, toString);
+			if (O_strcmp(OOOF(szError), szError) != 0)
+			{
+				OOOError("expected: %s: received: %s", OOOF(szError), szError);
+			}
 		}
 	}
 	else
 	{
-		OOOCheck(iError == NULL);
+		if (iError)
+		{
+			OOOError(OOOICall(iError, toString));
+		}
+		else
+		{
+			OOOCheck(pData == OOOF(pData));
+			OOOCheck(uSize == OOOF(uSize));
+		}
 	}
 	OOOF(bChecked) = TRUE;
 OOOMethodEnd
@@ -334,8 +352,9 @@ OOOTest(OOOCacheRepository)
 	OOOICache * iCache;
 	char * szName;
 
+	OOOTestLog * pLog = OOOConstruct(OOOTestLog);
 	OOOFileSystem * pFileSystem = OOOConstruct(OOOFileSystem);
-	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, OOOCast(OOOIFileSystem, pFileSystem), CACHE_DIRECTORY, CACHE_SIZE);
+	OOOCacheRepository * pRepository = OOOConstruct(OOOCacheRepository, OOOCast(OOOILog, pLog), OOOCast(OOOIFileSystem, pFileSystem), CACHE_DIRECTORY, CACHE_SIZE);
 
 	/* start by removing the cache directory */
 	removeDirectory(pFileSystem, CACHE_DIRECTORY);
@@ -380,14 +399,15 @@ OOOTest(OOOCacheRepository)
 	 * This should result in the MY_DATA_NAME file being deleted as it was
 	 * used least recently
 	 */
-//	set(iCache, EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, "", NULL, 0);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
-//	readFile(pFileSystem, CACHE_DIRECTORY "/" EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(MY_DATA) + 1);
+	set(iCache, EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	//readFile(pFileSystem, CACHE_DIRECTORY "/" MY_DATA_NAME, "", NULL, 0);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" YOUR_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(YOUR_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" TEMP_DATA_NAME, NULL, (unsigned char *) MY_DATA, O_strlen(MY_DATA) + 1);
+	readFile(pFileSystem, CACHE_DIRECTORY "/" EXCESS_DATA_NAME, NULL, (unsigned char *) YOUR_DATA, O_strlen(MY_DATA) + 1);
 
 	/* TODO: should delete the cache directory on set if the manifest cannot be loaded */
 
 	OOODestroy(pRepository);
 	OOODestroy(pFileSystem);
+	OOODestroy(pLog);
 }

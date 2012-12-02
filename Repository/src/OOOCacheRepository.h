@@ -5,9 +5,10 @@
 #include "OOOIRepository.h"
 #include "OOOICache.h"
 #include "OOOIFileSystem.h"
+#include "OOOILog.h"
 
 #define OOOClass OOOCacheRepository
-OOODeclare(OOOIFileSystem * iFileSystem, char * szDirectory, size_t uSize)
+OOODeclare(OOOILog * iLog, OOOIFileSystem * iFileSystem, char * szDirectory, size_t uSize)
 	OOOImplements
 		OOOImplement(OOOIRepository)
 		OOOImplement(OOOICache)
