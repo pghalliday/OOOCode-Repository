@@ -102,9 +102,7 @@ OOOConstructorEnd
  * Private CacheSetManifestReadFile class declaration
  */
 
-#define OOOClass CacheSetManifestReadFile
-CacheSetReadFileDeclare
-#undef OOOClass
+OOOIFileReadDataClosure(CacheSetManifestReadFile, OOOCacheRepository, CacheSetClosure)
 
 /*
  * Private CacheSetManifestInitializeFile class declaration
@@ -347,7 +345,13 @@ OOOMethod(void, set, OOOICacheData * iCacheData)
 			/*
 			 * Read the cache manifest
 			 */
-			CacheSetManifestReadFile * pCacheSetManifestReadFile = OOOConstruct(CacheSetManifestReadFile, OOOThis, pCacheSetClosure, OOOPCCall(CacheSetClosure, pCacheSetClosure, getManifestPath));
+			CacheSetManifestReadFile * pCacheSetManifestReadFile = OOOClosureConstruct
+			(
+				CacheSetManifestReadFile,
+				cacheSetManifestRead,
+				pCacheSetClosure,
+				OOOPCCall(CacheSetClosure, pCacheSetClosure, getManifestPath)
+			);
 			OOOICall(OOOF(iFileSystem), readFile, OOOCast(OOOIFileReadData, pCacheSetManifestReadFile));
 		}
 		else
@@ -413,42 +417,6 @@ OOOConstructor(OOOILog * iLog, OOOIFileSystem * iFileSystem, char * szDirectory,
 }
 OOOConstructorEnd
 #undef OOOClass
-
-/*
- * Closure implementation templates
- */
-#define CacheSetReadFileImplementation(CALLBACK) \
-	OOOPrivateData \
-		OOOCacheRepository * pRepository; \
-		CacheSetClosure * pCacheSetClosure; \
-		char * szPath; \
-	OOOPrivateDataEnd \
-	OOODestructor \
-	OOODestructorEnd \
-	OOOMethod(char *, getPath) \
-	{ \
-		return OOOF(szPath); \
-	} \
-	OOOMethodEnd \
-	OOOMethod(void, read, OOOIError * iError, unsigned char * pData, size_t uSize) \
-	{ \
-		OOOPCCall(OOOCacheRepository, OOOF(pRepository), CALLBACK, OOOF(pCacheSetClosure), iError, pData, uSize); \
-		OOODestroy(OOOThis); \
-	} \
-	OOOMethodEnd \
-	OOOConstructorPrivate(OOOCacheRepository * pRepository, CacheSetClosure * pCacheSetClosure, char * szPath) \
-	{ \
-		_OOOMapVirtuals(OOOIFileReadData) \
-			OOOMapVirtual(getPath) \
-			OOOMapVirtual(read) \
-		_OOOMapVirtualsEnd(OOOIFileReadData) \
-		OOOMapMethods \
-		OOOMapMethodsEnd \
-		OOOF(pRepository) = pRepository; \
-		OOOF(pCacheSetClosure) = pCacheSetClosure; \
-		OOOF(szPath) = szPath; \
-	} \
-	OOOConstructorEnd
 
 #define CacheSetWriteFileImplementation(CALLBACK) \
 	OOOPrivateData \
@@ -531,14 +499,6 @@ OOOConstructorEnd
 		OOOF(szPath) = szPath; \
 	} \
 	OOOConstructorEnd
-
-/*
- * Private CacheSetManifestReadFile class implementation
- */
-
-#define OOOClass CacheSetManifestReadFile
-CacheSetReadFileImplementation(cacheSetManifestRead)
-#undef OOOClass
 
 /*
  * Private CacheSetManifestInitializeFile class implementation
