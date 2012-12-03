@@ -94,15 +94,8 @@ OOOConstructorEnd
 	CacheSetClosureDeclareBody(INTERFACE)
 #define CacheSetClosureDeclare(INTERFACE, ARGS...) OOOPaste(CacheSetClosureDeclare, OOOIsEmpty(ARGS))(INTERFACE, ARGS)
 
-#define CacheSetReadFileDeclare CacheSetClosureDeclare(OOOIFileReadData, char * szPath)
 #define CacheSetWriteFileDeclare CacheSetClosureDeclare(OOOIFileWriteData, char * szPath, unsigned char * pData, size_t uSize)
 #define CacheSetRemoveDirectoryDeclare CacheSetClosureDeclare(OOOIDirectoryRemoveData, char * szPath)
-
-/*
- * Private CacheSetManifestReadFile class declaration
- */
-
-OOOIFileReadDataClosure(CacheSetManifestReadFile, OOOCacheRepository, CacheSetClosure)
 
 /*
  * Private CacheSetManifestInitializeFile class declaration
@@ -141,6 +134,14 @@ CacheSetRemoveDirectoryDeclare
  */
 
 #define OOOClass OOOCacheRepository
+
+/*
+ * Private CacheSetManifestReadFile class declaration
+ */
+#define OOOClosure CacheSetManifestReadFile
+OOOIFileReadDataClosure(CacheSetClosure)
+#undef OOOClosure
+
 typedef struct _Entry Entry;
 struct _Entry
 {
