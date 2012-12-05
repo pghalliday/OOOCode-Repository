@@ -84,21 +84,27 @@ OOOConstructorEnd
  * Private CacheSetManifestReadFile class declaration
  */
 #define OOOClosure CacheSetReadFile
-OOOIFileReadDataClosure(CacheSetClosure)
+#define OOOClosureType CacheSetClosure *
+#include "OOOFileReadClosure.h"
+#undef OOOClosureType
 #undef OOOClosure
 
 /*
  * Private CacheSetWriteFile class declaration
  */
 #define OOOClosure CacheSetWriteFile
-OOOIFileWriteDataClosure(CacheSetClosure)
+#define OOOClosureType CacheSetClosure *
+#include "OOOFileWriteClosure.h"
+#undef OOOClosureType
 #undef OOOClosure
 
 /*
  * Private CacheSetResetDirectory class declaration
  */
 #define OOOClosure CacheSetRemoveDirectory
-OOOIDirectoryRemoveDataClosure(CacheSetClosure)
+#define OOOClosureType CacheSetClosure *
+#include "OOODirectoryRemoveClosure.h"
+#undef OOOClosureType
 #undef OOOClosure
 
 typedef struct _Entry Entry;

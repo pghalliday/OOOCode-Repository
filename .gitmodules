@@ -16,3 +16,6 @@
 [submodule "Repository/submodules/FileSystem"]
 	path = Repository/submodules/FileSystem
 	url = https://github.com/pghalliday/OOOCode-FileSystem.git
+[submodule "Repository/submodules/Macros"]
+	path = Repository/submodules/Macros
+	url = https://github.com/pghalliday/OOOCode-Macros.git
